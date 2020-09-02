@@ -27,3 +27,11 @@ export const Content = styled.div`
   flex-grow: 1;
   padding: 0 24px;
 `;
+
+export const DownloadButtonContainer = styled.div`
+  text-align: center;
+  margin: 20px 0;
+  & a {
+    text-decoration: none;
+  }
+`;

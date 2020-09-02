@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {createMuiTheme, ThemeProvider} from '@material-ui/core/styles';
 import FingerprintIcon from '@material-ui/icons/Fingerprint';
 import GetAppIcon from '@material-ui/icons/GetApp';
@@ -6,13 +6,21 @@ import logo from './logo.png';
 import './App.css';
 import CSVReader from 'react-csv-reader'
 import CssBaseline from "@material-ui/core/CssBaseline";
-import Paper from "@material-ui/core/Paper";
-import {Appcontainer, Aside, Content, ColumnsCheckBoxList, Form, FormRow} from './App.style'
+import {
+    Appcontainer,
+    Aside,
+    Content,
+    ColumnsCheckBoxList,
+    Form,
+    FormRow,
+    DownloadButtonContainer
+} from './App.style'
 import Button from "@material-ui/core/Button";
 import FormControlLabel from "@material-ui/core/FormControlLabel";
 import Checkbox from "@material-ui/core/Checkbox";
 import slug from 'limax';
 import { CSVLink } from "react-csv";
+import {LogDisplay} from "./components/LogDisplay/LogDisplay.component";
 
 const theme = createMuiTheme({
     palette: {
@@ -35,6 +43,14 @@ function App() {
 
     const [columns, setColumns] = useState([]);
 
+    // ComponentDidMount
+    useEffect(() => {
+        console.log('%cApplication initialized...', 'color: #4af626');
+        console.info('Please import a CSV file, select columns to anonymize, import seeds if needed and then click to anonymize.');
+        console.info('Without any seeds, the data to anonymize will be replaced by the following value "💩"');
+        console.info('Everything is processing on client side, nothing will be uploaded on our servers, your data are safe.');
+    }, []);
+
     const handleCsv = (data, fileInfo) => {
         const cols = Object.keys(data[0]).map((col, i) => {
             const colSlug = slug(col);
@@ -47,7 +63,11 @@ function App() {
             }
         });
 
-        console.log(fileInfo, cols, data);
+        console.log('%cCSV imported successfully ✔', 'color: #4af626');
+        console.log('Info:', fileInfo);
+        console.log('Data:', data);
+        console.log('Columns list:', cols);
+
         setCsv({loaded: true, fileInfo, data});
         setColumns(cols)
     };
@@ -61,15 +81,22 @@ function App() {
     };
 
     const handleCsvSeed = (data, fileInfo) => {
-        console.log(data);
+        console.log('%cSeeds imported successfully ✔', 'color: #4af626');
+        console.log('Info:', fileInfo);
+        console.log('Data:', data);
         setCsvSeed({loaded: true, fileInfo, data});
     };
 
     const handleAnonymize = () => {
+        console.log('Processing anonymization...');
+
         const csvData = csv.data;
         const anonCsvData = csvData.map(row => anonymizeRow(row));
 
         setAnonData(anonCsvData);
+
+        console.log('%cAnonymization complete ✔️', 'color: #4af626');
+        console.info(`You can now download your anonymized CSV file "${csv.fileInfo.name.slice(0, -4)}_anonymized.csv" by clicking the button below`)
     };
 
     const anonymizeRow = row => {
@@ -106,22 +133,21 @@ function App() {
                         ANONYMIZER
                     </header>
 
-                    <Paper>
-                        {anonData.length > 0 && (
-                            <>
-                                <p>CSV ANONYMIZED SUCCESSFULLY!</p>
-                                <CSVLink data={anonData} separator={";"} filename={`${csv.fileInfo.name.slice(0, -4)}_anonymized.csv`}>
-                                    <Button
-                                        variant="contained"
-                                        color="default"
-                                        startIcon={<GetAppIcon />}
-                                    >
-                                        {csv.fileInfo.name.slice(0, -4)}_anonymized.csv
-                                    </Button>
-                                </CSVLink>
-                            </>
-                        )}
-                    </Paper>
+                    <LogDisplay />
+
+                    {anonData.length > 0 && (
+                        <DownloadButtonContainer>
+                            <CSVLink data={anonData} separator={";"} filename={`${csv.fileInfo.name.slice(0, -4)}_anonymized.csv`}>
+                                <Button
+                                    variant="contained"
+                                    color="default"
+                                    startIcon={<GetAppIcon />}
+                                >
+                                    {csv.fileInfo.name.slice(0, -4)}_anonymized.csv
+                                </Button>
+                            </CSVLink>
+                        </DownloadButtonContainer>
+                    )}
                 </Content>
 
                 <Aside>
