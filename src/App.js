@@ -21,6 +21,7 @@ import Checkbox from "@material-ui/core/Checkbox";
 import slug from 'limax';
 import { CSVLink } from "react-csv";
 import {LogDisplay} from "./components/LogDisplay/LogDisplay.component";
+import TextField from "@material-ui/core/TextField";
 
 const theme = createMuiTheme({
     palette: {
@@ -40,6 +41,7 @@ function App() {
     const [csv, setCsv] = useState({loaded: false, fileInfo: null, data: []});
     const [csvSeed, setCsvSeed] = useState({loaded: false, fileInfo: null, data: []});
     const [anonData, setAnonData] = useState([]);
+    const [defaultAnonValue, setDefaultAnonValue] = useState('anon');
 
     const [columns, setColumns] = useState([]);
 
@@ -47,7 +49,7 @@ function App() {
     useEffect(() => {
         console.log('%cApplication initialized...', 'color: #4af626');
         console.info('Please import a CSV file, select columns to anonymize, import seeds if needed and then click to anonymize.');
-        console.info('Without any seeds, the data to anonymize will be replaced by the following value "💩"');
+        console.info('Without any seeds, the data to anonymize will be replaced by the default anon value');
         console.info('Everything is processing on client side, nothing will be uploaded on our servers, your data are safe.');
     }, []);
 
@@ -95,21 +97,21 @@ function App() {
 
         setAnonData(anonCsvData);
 
-        console.log('%cAnonymization complete ✔️', 'color: #4af626');
+        console.log('%cAnonymization complete ✔', 'color: #4af626');
         console.info(`You can now download your anonymized CSV file "${csv.fileInfo.name.slice(0, -4)}_anonymized.csv" by clicking the button below`)
     };
 
     const anonymizeRow = row => {
         const colsToAnon = columns.filter((column) => column.selected);
-        let value = '💩';
+        let value = defaultAnonValue;
 
         if(!csvHasSeeds()) {
             colsToAnon.forEach(colToAnon => row[colToAnon.name] = value);
         } else {
             colsToAnon.forEach(colToAnon => {
-                if (colHasSeeds(colToAnon)) {
-                    value = getRandomSeedValueForColumn(colToAnon);
-                }
+                value = colHasSeeds(colToAnon)
+                    ? getRandomSeedValueForColumn(colToAnon)
+                    : defaultAnonValue;
                 return row[colToAnon.name] = value;
             });
         }
@@ -129,6 +131,10 @@ function App() {
     const getRandomSeedValueForColumn = (column) => {
         const randomIndex = Math.floor(Math.random() * csvSeed.data.length);
         return csvSeed.data[randomIndex][column.name];
+    };
+
+    const handleDefaultAnonValueInput = (value) => {
+        setDefaultAnonValue(value)
     };
 
 
@@ -196,6 +202,10 @@ function App() {
                                 <legend>Seeds</legend>
                                 <CSVReader className="csv-input" onFileLoaded={handleCsvSeed} parserOptions={papaparseOptions}/>
                             </fieldset>
+                        </FormRow>
+
+                        <FormRow>
+                            <TextField id="defaultAnonValue" label="Default anon value" defaultValue={defaultAnonValue} onChange={(e) => handleDefaultAnonValueInput(e.target.value)}  />
                         </FormRow>
 
                         <FormRow style={{textAlign: 'center'}}>
