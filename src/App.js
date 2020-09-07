@@ -103,17 +103,26 @@ function App() {
         const colsToAnon = columns.filter((column) => column.selected);
         let value = '💩';
 
-        colsToAnon.forEach(colToAnon => {
-            if (colHasSeeds(colToAnon)) {
-                value = getRandomSeedValueForColumn(colToAnon);
-            }
-            return row[colToAnon.name] = value;
-        });
+        if(!csvHasSeeds()) {
+            colsToAnon.forEach(colToAnon => row[colToAnon.name] = value);
+        } else {
+            colsToAnon.forEach(colToAnon => {
+                if (colHasSeeds(colToAnon)) {
+                    value = getRandomSeedValueForColumn(colToAnon);
+                }
+                return row[colToAnon.name] = value;
+            });
+        }
 
         return row;
     };
 
+    const csvHasSeeds = () => {
+        return (csvSeed.loaded && csvSeed.data);
+    };
+
     const colHasSeeds = (column) => {
+        if (!csvSeed.loaded || !csvSeed.data) return false;
         return csvSeed.data[0].hasOwnProperty(column.name);
     };
 
