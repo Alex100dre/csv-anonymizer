@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect} from 'react';
 import {createMuiTheme, ThemeProvider} from '@material-ui/core/styles';
 import FingerprintIcon from '@material-ui/icons/Fingerprint';
 import GetAppIcon from '@material-ui/icons/GetApp';
@@ -6,6 +6,7 @@ import logo from './logo.png';
 import './App.css';
 import CSVReader from 'react-csv-reader'
 import CssBaseline from "@material-ui/core/CssBaseline";
+import { useStoreActions, useStoreState } from 'easy-peasy';
 import {
     Appcontainer,
     Aside,
@@ -37,13 +38,16 @@ const papaparseOptions = {
 };
 
 function App() {
-
-    const [csv, setCsv] = useState({loaded: false, fileInfo: null, data: []});
-    const [csvSeed, setCsvSeed] = useState({loaded: false, fileInfo: null, data: []});
-    const [anonData, setAnonData] = useState([]);
-    const [defaultAnonValue, setDefaultAnonValue] = useState('anon');
-
-    const [columns, setColumns] = useState([]);
+    const csvSource = useStoreState(state => state.csvSource);
+    const setCsvSource = useStoreActions(actions => actions.csvSource.setCsvSource);
+    const csvSeeds = useStoreState(state => state.csvSeeds);
+    const setCsvSeeds = useStoreActions(actions => actions.csvSeeds.setCsvSeeds);
+    const anonData = useStoreState(state => state.anonymization.data);
+    const setAnonData = useStoreActions(actions => actions.anonymization.setData);
+    const columns = useStoreState(state => state.anonymization.parameters.columns);
+    const setColumns = useStoreActions(actions => actions.anonymization.setColumns);
+    const defaultAnonValue = useStoreState(state => state.anonymization.parameters.defaultAnonValue);
+    const setDefaultAnonValue = useStoreActions(actions => actions.anonymization.setDefaultAnonValue);
 
     // ComponentDidMount
     useEffect(() => {
@@ -61,7 +65,8 @@ function App() {
                 id: `${i}_${colSlug}`,
                 name: col,
                 slug: colSlug,
-                selected: false
+                selected: false,
+                searchOccurrencesThroughColumns: false
             }
         });
 
@@ -70,7 +75,7 @@ function App() {
         console.log('Data:', data);
         console.log('Columns list:', cols);
 
-        setCsv({loaded: true, fileInfo, data});
+        setCsvSource({fileInfo, data});
         setColumns(cols)
     };
 
@@ -86,19 +91,19 @@ function App() {
         console.log('%cSeeds imported successfully ✔', 'color: #4af626');
         console.log('Info:', fileInfo);
         console.log('Data:', data);
-        setCsvSeed({loaded: true, fileInfo, data});
+        setCsvSeeds({fileInfo, data});
     };
 
     const handleAnonymize = () => {
         console.log('Processing anonymization...');
 
-        const csvData = csv.data;
-        const anonCsvData = csvData.map(row => anonymizeRow(row));
+        const sourceData = csvSource.data;
+        const anonCsvData = sourceData.map(row => anonymizeRow(row));
 
         setAnonData(anonCsvData);
 
         console.log('%cAnonymization complete ✔', 'color: #4af626');
-        console.info(`You can now download your anonymized CSV file "${csv.fileInfo.name.slice(0, -4)}_anonymized.csv" by clicking the button below`)
+        console.info(`You can now download your anonymized CSV file "${csvSource.fileInfo.name.slice(0, -4)}_anonymized.csv" by clicking the button below`)
     };
 
     const anonymizeRow = row => {
@@ -120,17 +125,17 @@ function App() {
     };
 
     const csvHasSeeds = () => {
-        return (csvSeed.loaded && csvSeed.data);
+        return (csvSeeds.loaded && csvSeeds.data);
     };
 
     const colHasSeeds = (column) => {
-        if (!csvSeed.loaded || !csvSeed.data) return false;
-        return csvSeed.data[0].hasOwnProperty(column.name);
+        if (!csvSeeds.loaded || !csvSeeds.data) return false;
+        return csvSeeds.data[0].hasOwnProperty(column.name);
     };
 
     const getRandomSeedValueForColumn = (column) => {
-        const randomIndex = Math.floor(Math.random() * csvSeed.data.length);
-        return csvSeed.data[randomIndex][column.name];
+        const randomIndex = Math.floor(Math.random() * csvSeeds.data.length);
+        return csvSeeds.data[randomIndex][column.name];
     };
 
     const handleDefaultAnonValueInput = (value) => {
@@ -149,16 +154,16 @@ function App() {
                     </header>
 
                     <LogDisplay />
-
+                    
                     {anonData.length > 0 && (
                         <DownloadButtonContainer>
-                            <CSVLink data={anonData} separator={";"} filename={`${csv.fileInfo.name.slice(0, -4)}_anonymized.csv`}>
+                            <CSVLink data={anonData} separator={";"} filename={`${csvSource.fileInfo.name.slice(0, -4)}_anonymized.csv`}>
                                 <Button
                                     variant="contained"
                                     color="default"
                                     startIcon={<GetAppIcon />}
                                 >
-                                    {csv.fileInfo.name.slice(0, -4)}_anonymized.csv
+                                    {csvSource.fileInfo.name.slice(0, -4)}_anonymized.csv
                                 </Button>
                             </CSVLink>
                         </DownloadButtonContainer>
@@ -178,7 +183,7 @@ function App() {
                             <fieldset>
                                 <legend>Columns to anonymize</legend>
                                 <ColumnsCheckBoxList>
-                                    {csv.loaded && columns.length > 0 && columns.map(column => (
+                                    {csvSource.loaded && columns.length > 0 && columns.map(column => (
                                         <div key={column.id}>
                                             <FormControlLabel
                                                 control={
