@@ -1,7 +1,10 @@
-import { action, computed } from 'easy-peasy';
+import {action, computed, thunk} from 'easy-peasy';
+import Anonymizer from "../../helpers/anonymization";
 
 const anonymizationModel = {
     // Properties
+    processing: false,
+    processed: false,
     data: [],
     parameters: {
         columns: [],
@@ -27,6 +30,25 @@ const anonymizationModel = {
         state.parameters.defaultAnonValue = payload;
     }),
 
+    setProcessing: action((state, payload) => {
+        state.processing = payload;
+    }),
+
+    setProcessed: action((state, payload) => {
+        state.processed = payload;
+    }),
+
+    anonymize: thunk(async (actions, payload, {getState, getStoreState}) => {
+        actions.setProcessed(false);
+        actions.setProcessing(true);
+        const anonParams = getState().parameters;
+        const { csvSource, csvSeeds} = getStoreState()
+        const anonymizer = new Anonymizer(csvSource, anonParams, csvSeeds);
+        const anonymized = anonymizer.anonymize();
+        actions.setData(anonymized);
+        actions.setProcessing(false);
+        actions.setProcessed(true);
+    })
 };
 
 export default anonymizationModel;

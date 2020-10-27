@@ -1,7 +1,6 @@
 import React, {useEffect} from 'react';
 import {createMuiTheme, ThemeProvider} from '@material-ui/core/styles';
 import FingerprintIcon from '@material-ui/icons/Fingerprint';
-import GetAppIcon from '@material-ui/icons/GetApp';
 import logo from './logo.png';
 import './App.css';
 import CSVReader from 'react-csv-reader'
@@ -13,18 +12,16 @@ import {
     Content,
     ColumnsCheckBoxList,
     Form,
-    FormRow,
-    DownloadButtonContainer
+    FormRow
 } from './App.style'
 import Button from "@material-ui/core/Button";
 import FormControlLabel from "@material-ui/core/FormControlLabel";
 import Checkbox from "@material-ui/core/Checkbox";
 import slug from 'limax';
-import { CSVLink } from "react-csv";
 import {LogDisplay} from "./components/LogDisplay/LogDisplay.component";
 import TextField from "@material-ui/core/TextField";
 import {ColumnsParameters} from "./components/ColumnsParameters/ColumnsParameters.component";
-import Anonymizer from './helpers/anonymization'
+import {Output} from "./components/Output/Output.component";
 
 const theme = createMuiTheme({
     palette: {
@@ -42,11 +39,8 @@ const papaparseOptions = {
 function App() {
     const csvSource = useStoreState(state => state.csvSource);
     const setCsvSource = useStoreActions(actions => actions.csvSource.setCsvSource);
-    const csvSeeds = useStoreState(state => state.csvSeeds);
     const setCsvSeeds = useStoreActions(actions => actions.csvSeeds.setCsvSeeds);
-    const anonData = useStoreState(state => state.anonymization.data);
-    const anonParams = useStoreState(state => state.anonymization.parameters);
-    const setAnonData = useStoreActions(actions => actions.anonymization.setData);
+    const anonymize = useStoreActions(actions => actions.anonymization.anonymize);
     const columns = useStoreState(state => state.anonymization.parameters.columns);
     const setColumns = useStoreActions(actions => actions.anonymization.setColumns);
     const defaultAnonValue = useStoreState(state => state.anonymization.parameters.defaultAnonValue);
@@ -99,10 +93,7 @@ function App() {
 
     const handleAnonymize = () => {
         console.log('Processing anonymization...');
-        const anonymizer = new Anonymizer(csvSource, anonParams, csvSeeds);
-        const anonymized = anonymizer.anonymize();
-        setAnonData(anonymized)
-
+        anonymize();
         console.log('%cAnonymization complete ✔', 'color: #4af626');
         console.info(`You can now download your anonymized CSV file "${csvSource.fileInfo.name.slice(0, -4)}_anonymized.csv" by clicking the button below`)
     };
@@ -126,19 +117,7 @@ function App() {
 
                     <ColumnsParameters />
 
-                    {anonData.length > 0 && (
-                        <DownloadButtonContainer>
-                            <CSVLink data={anonData} separator={";"} filename={`${csvSource.fileInfo.name.slice(0, -4)}_anonymized.csv`}>
-                                <Button
-                                    variant="contained"
-                                    color="default"
-                                    startIcon={<GetAppIcon />}
-                                >
-                                    {csvSource.fileInfo.name.slice(0, -4)}_anonymized.csv
-                                </Button>
-                            </CSVLink>
-                        </DownloadButtonContainer>
-                    )}
+                    <Output />
                 </Content>
 
                 <Aside>
